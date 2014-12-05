@@ -2,7 +2,7 @@ function frames = eularianLinearMagnification(filename, frames, upperFreqRange, 
 
     fprintf('Motion magnifying video %s   \n', filename);
     [amplifiedBands, pind] = bandPassFilter_DiscreteTimeDomain(frames, upperFreqRange, lowerFreqRange, alpha, lambda_c);
-    undoPyramids(frames, amplifiedBands, pind);
+    frames = undoPyramids(frames, amplifiedBands, pind);
 end
     
 
@@ -15,15 +15,18 @@ end
 
 function frames = undoPyramids(frames, amplifiedBands, pind)
 
+    fprintf('Reconstructing frames   \n');
     for i=1:size(amplifiedBands, 3)
-        frame = frames(:, :, :, i);
         
+        progmeter(i, size(amplifiedBands, 3));
+        frame = frames(:, :, :, i);
+
         amplifiedFrame = zeros(size(frame)); 
         amplifiedFrame(:,:,1) = reconLpyr(amplifiedBands(:,1),pind);
         amplifiedFrame(:,:,2) = reconLpyr(amplifiedBands(:,2),pind);
         amplifiedFrame(:,:,3) = reconLpyr(amplifiedBands(:,3),pind);
         
-        frames(:, :, :, i) = frame + amplifiedFrame;
+        frames(:, :, :, i) = amplifiedFrame;
     end
 end
 
@@ -52,7 +55,7 @@ function [amplifiedBands, pind] = bandPassFilter_DiscreteTimeDomain(frames, uppe
         pyrLowerBandPass = (1-lowerFreqRange)*previousPyrLowerBandPass + lowerFreqRange*pyr;
         filtered = (pyrUpperBandPass - pyrLowerBandPass);
         
-        amplifiedBands(:,:,i) = amplifyMotion(pyr, frame, filtered, lambda_c, alpha, pind);
+        amplifiedBands(:,:,i) = filtered;%amplifyMotion(pyr, frame, filtered, lambda_c, alpha, pind);
                 
         previousPyrUpperBandPass = pyrUpperBandPass;
         previousPyrLowerBandPass = pyrUpperBandPass;
