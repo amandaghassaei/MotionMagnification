@@ -1,0 +1,8 @@
+function eularianLinearMagnification()
+    
+    
+
+
+
+end
+
