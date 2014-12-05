@@ -1,6 +1,6 @@
 function [allFrames, frameRate] = extractImgsFromVideo(filename, verbose)
 
-    fprintf('Loading video file %s\n', filename);
+    fprintf('Loading video file %s   \n', filename);
     % Read video
     video = VideoReader(filename);
     
@@ -17,6 +17,8 @@ function [allFrames, frameRate] = extractImgsFromVideo(filename, verbose)
         allFrames(:,:,:,i) = getVideoFrame(i, video, vidHeight, vidWidth, numChannels);
         if (verbose)
             fprintf('Loading video file %s, frame %i of %i\n', filename, i, numFrames);
+        else
+            progmeter(i, numFrames);
         end
     end
 end

@@ -1,5 +1,6 @@
 function allFrames = extractImgsFromSequence(filename, verbose)
 
+    fprintf('Loading images from %s directory   \n', filename);
     allFiles = getAllFilesInDir(filename);
     
 %      load first image
@@ -12,6 +13,8 @@ function allFrames = extractImgsFromSequence(filename, verbose)
         file = file{1};
         if (verbose)
             fprintf('Loading image %s, frame %i of %i\n', file, i, size(allFiles, 1));
+        else
+            progmeter(i, size(allFiles, 1));
         end
         img = im2double(imread(file));
         allFrames(:, :, :, i) = img(:, :, :);
