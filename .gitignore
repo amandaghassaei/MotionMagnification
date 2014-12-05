@@ -10,3 +10,6 @@
 *.mex*
 # Simulink Code Generation
 slprj/
+
+#results folder
+results/
