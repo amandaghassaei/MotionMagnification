@@ -1,8 +1,9 @@
-function frames = eularianLinearMagnification(filename, frames, upperFreqRange, lowerFreqRange, alpha, lambda_c)
+function frames = eularianLinearMagnification(frames, upperFreqRange, lowerFreqRange, alpha, lambda_c)
 
-    fprintf('Motion magnifying video %s   \n', filename);
-    [amplifiedBands, pind] = bandPassFilter_DiscreteTimeDomain(frames, upperFreqRange, lowerFreqRange, alpha, lambda_c);
-    frames = undoPyramids(frames, amplifiedBands, pind);
+    [pyrs, pind] = buildLaplacianPyrs(frames);
+    pyrs = bandPassFilter_DiscreteTimeDomain(pyrs, upperFreqRange, lowerFreqRange);
+    pyrs = amplify(pyrs, size(frames, 2), size(frames, 1), lambda_c, alpha, pind);
+    frames = reconstructFrames(frames, pyrs, pind);
 end
     
 
@@ -13,50 +14,62 @@ function [pyr, pind] = buildLaplacianPyr(frame)
     [pyr(:,3),~] = buildLpyr(frame(:,:,3),'auto');
 end
 
-function frames = undoPyramids(frames, amplifiedBands, pind)
+function [pyrs, pind] = buildLaplacianPyrs(frames)
 
-    fprintf('Reconstructing frames   \n');
-    for i=1:size(amplifiedBands, 3)
-        
-        progmeter(i, size(amplifiedBands, 3));
-        frame = frames(:, :, :, i);
-
-        amplifiedFrame = zeros(size(frame)); 
-        amplifiedFrame(:,:,1) = reconLpyr(amplifiedBands(:,1),pind);
-        amplifiedFrame(:,:,2) = reconLpyr(amplifiedBands(:,2),pind);
-        amplifiedFrame(:,:,3) = reconLpyr(amplifiedBands(:,3),pind);
-        
-        frames(:, :, :, i) = amplifiedFrame;
+    fprintf('Building pyramids   \n');
+    [pyr, pind] = buildLaplacianPyr(frames(:,:,:,1));
+    pyrs = zeros(size(pyr, 1), size(pyr, 2), size(frames,4));
+    pyrs(:,:,1) = pyr;
+    
+    for i=2:size(pyrs, 3)
+        [pyr, pind] = buildLaplacianPyr(frames(:,:,:,i));
+        pyrs(:,:,i) = pyr;
+        progmeter(i, size(pyrs, 3));
     end
+    
 end
 
-function [amplifiedBands, pind] = bandPassFilter_DiscreteTimeDomain(frames, upperFreqRange, lowerFreqRange, alpha, lambda_c)
+function frames = reconstructFrames(frames, pyrs, pind)
 
-    %load first image in sequence
-    [pyr, ~] = buildLaplacianPyr(frames(:,:,:,1));
-    previousPyrUpperBandPass = pyr;%store pyramid for band pass filtering
-    previousPyrLowerBandPass = pyr;%store pyramid for band pass filtering
+    fprintf('Reconstructing frames   \n');
+    for i=1:size(pyrs, 3)
+        
+        progmeter(i, size(pyrs, 3));
+        frame = frames(:, :, :, i);
+
+        reconstructedFrame = zeros(size(frame)); 
+        reconstructedFrame(:,:,1) = reconLpyr(pyrs(:,1,i),pind);
+        reconstructedFrame(:,:,2) = reconLpyr(pyrs(:,2,i),pind);
+        reconstructedFrame(:,:,3) = reconLpyr(pyrs(:,3,i),pind);
+        
+        frames(:, :, :, i) = reconstructedFrame;
+    end
     
-    amplifiedBands = zeros(size(pyr, 1), size(pyr, 2), size(frames,4));
-    amplifiedBands(:, :, 1) = pyr;
+    frames(:,:,:,1) = zeros(size(reconstructedFrame));
+end
 
-    for i=2:size(frames,4)
+function filteredBands = bandPassFilter_DiscreteTimeDomain(pyrs, upperFreqRange, lowerFreqRange)
+    
+    fprintf('Temporal filtering   \n');
+    filteredBands = pyrs;
+    
+    firstFrame = pyrs(:,:,1);
+    previousPyrUpperBandPass = firstFrame;%store last upper band val
+    previousPyrLowerBandPass = firstFrame;%store last lower band val
+
+    for i=2:size(pyrs,3)
         
-        progmeter(i,size(frames,4));
-        
-        frame = frames(:,:,:,i);
-        [pyr, pind] = buildLaplacianPyr(frame);
-        
+        progmeter(i,size(pyrs,3));
+        pyr = pyrs(:,:,i);
+             
         % bandpass filtering (I'm using a lowpass + highpass
 %         pyrLowerBandPass = previousPyrLowerBandPass + (pyr - previousPyrLowerBandPass);%y[i] := y[i-1] + ? * (x[i] - y[i-1])
         
 %         (from Wu et al) lowpass - lowpass
         pyrUpperBandPass = (1-upperFreqRange)*previousPyrUpperBandPass + upperFreqRange*pyr;
         pyrLowerBandPass = (1-lowerFreqRange)*previousPyrLowerBandPass + lowerFreqRange*pyr;
-        filtered = (pyrUpperBandPass - pyrLowerBandPass);
+        filteredBands(:, :, i) = (pyrUpperBandPass - pyrLowerBandPass);
         
-        amplifiedBands(:,:,i) = filtered;%amplifyMotion(pyr, frame, filtered, lambda_c, alpha, pind);
-                
         previousPyrUpperBandPass = pyrUpperBandPass;
         previousPyrLowerBandPass = pyrUpperBandPass;
     end
@@ -66,39 +79,86 @@ function bandPassFilterContinuousTimeDomain()
     
 end
 
-function  amplifiedBand = amplifyMotion(pyr, frame, filtered, lambda_c, alpha, pind)
+function  pyrs = amplify(pyrs, frameWidth, frameHeight, lambda_c, alpha, pind)
 
-    ind = size(pyr,1);
-    delta = lambda_c/8/(1+alpha);
+    for i=1:size(pyrs, 3)
+        
+        pyr = pyrs(:,:,i);
+        ind = size(pyr,1);
 
-    % the factor to boost alpha above the bound we have in the
-    % paper. (for better visualization)
-    exaggeration_factor = 2;
+        delta = lambda_c/8/(1+alpha);
 
-    % compute the representative wavelength lambda for the lowest spatial 
-    % freqency band of Laplacian pyramid
+        % the factor to boost alpha above the bound we have in the
+        % paper. (for better visualization)
+        exaggeration_factor = 2;
 
-    lambda = (size(frame, 1)^2 + size(frame, 2)^2).^0.5/3; % 3 is experimental constant
+        % compute the representative wavelength lambda for the lowest spatial 
+        % freqency band of Laplacian pyramid
 
-    for l = size(pind, 1):-1:1
-      indices = ind-prod(pind(l,:))+1:ind;
-      % compute modified alpha for this level
-      currAlpha = lambda/delta/8 - 1;
-      currAlpha = currAlpha*exaggeration_factor;
+        lambda = (frameWidth^2 + frameHeight^2).^0.5/3; % 3 is experimental constant
 
-      if (l == size(pind,1) || l == 1) % ignore the highest and lowest frequency band
-          filtered(indices,:) = 0;
-      elseif (currAlpha > alpha)  % representative lambda exceeds lambda_c
-          filtered(indices,:) = alpha*filtered(indices,:);
-      else
-          filtered(indices,:) = currAlpha*filtered(indices,:);
-      end
+        for l = size(pind, 1):-1:1
+          indices = ind-prod(pind(l,:))+1:ind;
+          % compute modified alpha for this level
+          currAlpha = lambda/delta/8 - 1;
+          currAlpha = currAlpha*exaggeration_factor;
 
-      ind = ind - prod(pind(l,:));
-      % go one level down on pyramid, 
-      % representative lambda will reduce by factor of 2
-      lambda = lambda/2; 
+          if (l == size(pind, 1) || l == 1) % ignore the highest and lowest frequency band
+              pyr(indices,:) = 0;
+          elseif (currAlpha > alpha)  % representative lambda exceeds lambda_c
+              pyr(indices,:) = alpha*pyr(indices,:);
+          else
+              pyr(indices,:) = currAlpha*pyr(indices,:);
+          end
+
+          ind = ind - prod(pind(l,:));
+          % go one level down on pyramid, 
+          % representative lambda will reduce by factor of 2
+          lambda = lambda/2; 
+        end
     end
-    
-    amplifiedBand = filtered;
+end
+
+function  pyrs = amplifyMotion(pyrs, frameWidth, frameHeight, lambda_c, alpha, pind)
+
+    for i=1:size(pyrs, 3)
+
+        pyr = pyrs(:,:,i);
+        
+        currentIndex = size(pyr,1);
+        delta = lambda_c/8/(1+alpha);
+
+        % the factor to boost alpha above the bound we have in the
+        % paper. (for better visualization)
+        exaggeration_factor = 2;
+
+        % compute the representative wavelength lambda for the lowest spatial 
+        % freqency band of Laplacian pyramid
+
+        lambda = (frameWidth^2 + frameHeight^2).^0.5/3; % 3 is experimental constant
+
+        for l = size(pind, 1)-1:1
+          indices = totalPyramidPixels-prod(pind(l,:))+1:currentIndex;
+          
+          % compute modified alpha for this level
+          currAlpha = lambda/delta/8 - 1;
+          currAlpha = currAlpha*exaggeration_factor;
+
+          if (l == size(pind, 1) || l == 1) % ignore the highest and lowest frequency band
+              pyr(indices,:) = 0;
+          elseif (currAlpha > alpha)  % representative lambda exceeds lambda_c
+              pyr(indices,:) = alpha*pyr(indices,:);
+          else
+              pyr(indices,:) = currAlpha*pyr(indices,:);
+          end
+
+          currentIndex = currentIndex - prod(pind(l,:));
+          % go one level down on pyramid, 
+          % representative lambda will reduce by factor of 2
+          lambda = lambda/2; 
+        end
+
+        pyrs(:, :, i) = pyr;
+        
+    end
 end

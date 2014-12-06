@@ -1,4 +1,4 @@
-function [allFrames, frameRate] = extractImgs(dataDir, filename, verbose)
+function [allFrames, frameRate] = loadImgs(dataDir, filename, verbose)
     fullPath = fullfile(dataDir, filename);
     if strcmp(filename(1), '/')% if this is a sequence of images
         allFrames = extractImgsFromSequence(fullPath, verbose);
@@ -62,7 +62,7 @@ function allFrames = extractImgsFromSequence(filename, verbose)
             progmeter(i, size(allFiles, 1));
         end
         img = im2double(imread(file));
-        allFrames(:, :, :, i) = img(:, :, :);
+        allFrames(1:size(img, 1), 1:size(img, 2), :, i) = img(:, :, :);%resizes matrix even if new frame is bigger
     end
 end
 

@@ -3,7 +3,7 @@ function frames = preProcessFrames(frames, filename, colorspaceForProcessing, ve
     if strcmp(colorspaceForProcessing, 'rgb')
         return;
     end
-    fprintf('Preprocessing frames %s   \n', filename);
+    fprintf('Converting %s to %s colorspace   \n', filename, colorspaceForProcessing);
     
     for i=1:size(frames, 4)
         
@@ -12,6 +12,10 @@ function frames = preProcessFrames(frames, filename, colorspaceForProcessing, ve
             frames(:,:,:,i) = rgb2ntsc(frame);
         elseif strcmp(colorspaceForProcessing, 'hsv')
             frames(:,:,:,i) = rgb2hsv(frame);
+        elseif strcmp(colorspaceForProcessing, 'lab')
+%             frames(:,:,:,i) = rgb2lab(frame);
+        elseif strcmp(colorspaceForProcessing, 'gray')
+            frames(:,:,1,i) = rgb2gray(frame);
         end
             
         if (verbose)
