@@ -4,7 +4,7 @@ function drawFramesWithStarMarkers(frames, starCentersAndRadii)
         figure
         imshow(frames(:,:,:,i));
         hold on; % Prevent image from being blown away.
-        plot(starCentersAndRadii(:,2,i),starCentersAndRadii(:,1,i),'r+');
+        viscircles(starCentersAndRadii(:,1:2,i), starCentersAndRadii(:,3,i),'EdgeColor','r');
     end
 
 end
