@@ -11,12 +11,14 @@ function transform = proximityMatchStars(finalPass, frame1, frame, transformedFr
     transformedStarCenters = transformPointsForward(forwardTransform, starCenters(:,1:2));
     transformedStarCenters(:,3) = roughCalcRad(rgb2gray(transformedFrame), round(transformedStarCenters));
     
-%     drawFramesWithStarMarkers(cat(4, frame1, transformedFrame), cat(3, starCenters1(1:50,:), transformedStarCenters(1:50,:)), 200);
+%     centersDim = min(size(starCenters1,1), size(transformedStarCenters,1));
+%     drawFramesWithStarMarkers(cat(4, frame1, transformedFrame), cat(3, starCenters1(1:centersDim,:), transformedStarCenters(1:centersDim,:)), 200, true);
     
     matches = findMatches(starCenters1, transformedStarCenters, windowSize);
     
     featurePairs1 = starCenters1(matches(:,1), 1:2);
     featurePairs2 = starCenters(matches(:,2), 1:2);
+%     drawFeatureMaps([frame1; transformedFrame], featurePairs1, transformedStarCenters(matches(:,2), 1:2));
     
     numMatches = 10;
     numRANSAC = 20;
@@ -25,7 +27,7 @@ function transform = proximityMatchStars(finalPass, frame1, frame, transformedFr
         numRANSAC = 200;
     end
     transform = transformRANSAC(featurePairs1, featurePairs2, numRANSAC, numMatches);
-    testImageRegistration(frame1, frame, transform);
+%     testImageRegistration(frame1, frame, transform);
 end
 
 function [starCenters1, starCenters] = getCentersForFinalPass(starCenters1, starCenters)
@@ -48,14 +50,20 @@ function matches = findMatches(starCenters1, transformedStarCenters, windowSize)
         if transformedStarCenters(i,3)==-1 %this was outside the bounds of the transformed image
             continue;
         end
-        
+        bestMatch = [-1,-1,-1];
         for j=1:size(starCenters1, 1)
             dist = (starCenters1(j,1)-transformedStarCenters(i,1))^2 + (starCenters1(j,2)-transformedStarCenters(i,2))^2;
             if dist<(windowSize/2)^2
-                matches(matchIndex,1) = j;
-                matches(matchIndex,2) = i;
-                matchIndex = matchIndex+1;
+                if bestMatch(1,1) == -1 || dist<bestMatch(1,3)
+                    bestMatch = [j,i,dist];
+                end
             end
+        end
+        
+        if bestMatch(1,1) ~= -1
+            matches(matchIndex,1) = bestMatch(1,1);
+            matches(matchIndex,2) = bestMatch(1,2);
+            matchIndex = matchIndex+1;
         end
     end
 
