@@ -57,22 +57,4 @@ function starCentersAndRadii = sortByRadius(starCentersAndRadii)
     starCentersAndRadii=starCentersAndRadii(I,:);
 end
 
-function rads = roughCalcRad(image, maxIndices)
-    
-    %super simple, just count num pixels in + x direction that are above a
-    %threshold.  this will give good relative rads for an image, but rads 
-    %should be normalized when comparing across images
-    brightnessThreshold = 0.8;
-    rads = zeros(size(maxIndices, 1),1);
-    for i=1:size(maxIndices, 1)
-        rad = 0;
-        xPosition = maxIndices(i,1);
-        while(image(maxIndices(i,2), xPosition) > brightnessThreshold || (image(maxIndices(i,2), xPosition)-image(maxIndices(i,2), xPosition+1))>0.15)
-            rad = rad+1;
-            xPosition = xPosition+1;
-        end
-        rads(i) = rad;
-    end
-end
-
 

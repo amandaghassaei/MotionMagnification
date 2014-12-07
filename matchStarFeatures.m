@@ -10,9 +10,7 @@ function matchStarFeatures(frames, starCentersAndRadii)
     for i=2:size(starCentersAndRadii,3)
         featureVector = makeFeatureVector(starCentersAndRadii(:,:,i));
         matchIndex = getIndexOfClosestMatch(featureVector, frame1FeatureVector);
-        
     end
-
 end
 
 function matchIndex = getIndexOfClosestMatch(featureVector, frame1FeatureVector)
@@ -28,8 +26,6 @@ function matchIndex = getIndexOfClosestMatch(featureVector, frame1FeatureVector)
             
         end
     end
-
-
     matchIndex = 0;
 end
 

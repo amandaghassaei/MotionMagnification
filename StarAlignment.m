@@ -22,12 +22,38 @@ for i=1:size(allFilesToProcess, 1)
     filename = filename{1};% get string out
     
     [frames, frameRate] = loadImgs(dataDir, filename, verbose);
-%     featureMatchByHand(frames);
-    frames = preProcessFrames(frames, filename, 'gray', verbose);
-    starCentersAndRadii = locateAllStarCenters(frames);
-    matchWithSift(frames, verbose);
-%     matchStarFeatures(frames, starCentersAndRadii);
-%     drawFramesWithStarMarkers(frames, starCentersAndRadii);   
+    framesGray = preProcessFrames(frames, filename, 'gray', verbose);
+    starCenters = locateAllStarCenters(framesGray);
+%     drawFramesWithStarMarkers(frames, starCentersAndRadii, 20); 
+    
+    %register everything to frame 1
+    frame1 = frames(:,:,:,1);
+    frame1Gray = framesGray(:,:,1,1);
+
+    for j=2:size(frames, 4)
+        
+        frame = frames(:,:,:,j);
+        frameGray = framesGray(:,:,1,j);
+        
+         %first pass at registration - get kind of close in position and scale
+        [transform, transformedFrame] = featureMatchByHand(frame1, frame);
+%         matchWithSift(frame1, frame1Gray, frame, frameGray, verbose);
+%         matchStarFeatures(frame1, frame, starCentersAndRadii);
+
+        %second pass - align big stars well
+        windowSize = size(frame, 2)/20;
+        proximityMatchStars(false, frame1, frame, transformedFrame, starCenters(:,:,1), starCenters(:,:,j), transform, windowSize);
+        
+        %final pass - align using only smalled background stars (they are
+        %at infinity and do not move frame to frame)
+        windowSize = size(frame, 2)/40;
+        proximityMatchStars(true, frame1, frame, transformedFrame, starCenters(:,:,1), starCenters(:,:,j), transform, windowSize);
+        
+        
+    end
+
+    
+  
     
 %     writeVideoFromFrames(fullfile(resultsDir, filename), frameRate, frames, verbose);
 end

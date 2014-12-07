@@ -1,22 +1,15 @@
-function featureMatchByHand(frames)
+function [transform, transformedFrame] = featureMatchByHand(frame1, frame)
 
-    frame1 = frames(:,:,:,1);
+    fprintf('Select 5 feature pairs, select from top, then bottom, then top, then bottom...   \n');
+        
+    matchedPoints1 = [440.000000000000,221.000000000000;474.000000000000,189;98.0000000000000,200;90.0000000000000,118.000000000000;64.0000000000000,173];
+    matchedPoints2 = [376.000000000000,158;395.000000000000,130;137,190;123.000000000000,137;109.000000000000,178];
 
-    for i=2:size(frames,4)
-        
-        frame = frames(:,:,:,i);
-        
-        matchedPoints1 = [440.000000000000,221.000000000000;474.000000000000,189;98.0000000000000,200;90.0000000000000,118.000000000000;64.0000000000000,173];
-        matchedPoints2 = [376.000000000000,158;395.000000000000,130;137,190;123.000000000000,137;109.000000000000,178];
-        
 %         [matchedPoints1,matchedPoints2] = selectFeaturePoints(frame1, frame);
-        tform = fitgeotrans(matchedPoints2,matchedPoints1,'projective');
-        transformedFrame = imwarp(frame,tform,'OutputView',imref2d(size(frame1)));
-        figure
-        imshowpair(frame1,transformedFrame,'blend');
-    end
-    
-
+    transform = fitgeotrans(matchedPoints2,matchedPoints1,'projective');
+    transformedFrame = imwarp(frame,transform,'OutputView',imref2d(size(frame1)));
+%     figure
+%     imshowpair(frame1,transformedFrame,'blend');    
 end
 
 function [matchedPoints1,matchedPoints2] = selectFeaturePoints(frame1, frame)
