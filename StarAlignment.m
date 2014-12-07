@@ -22,6 +22,7 @@ for i=1:size(allFilesToProcess, 1)
     filename = filename{1};% get string out
     
     [frames, frameRate] = loadImgs(dataDir, filename, verbose);
+%     featureMatchByHand(frames);
     frames = preProcessFrames(frames, filename, 'gray', verbose);
     starCentersAndRadii = locateAllStarCenters(frames);
     matchWithSift(frames, verbose);

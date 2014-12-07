@@ -6,8 +6,8 @@ function matchWithSift(frames, verbose)
         
         frame = frames(:,:,1,i);
         
-        [frames1,descr1,~,dogss1] = sift(frame1, 'Verbosity', verbose);
-        [frames2,descr2,~,dogss2] = sift(frame, 'Verbosity', verbose);
+        [frames1,descr1,~,~] = sift(frame1, 'Verbosity', verbose);
+        [frames2,descr2,~,~] = sift(frame, 'Verbosity', verbose);
 
         descr1=uint8(512*descr1);
         descr2=uint8(512*descr2);
@@ -27,21 +27,16 @@ function matchWithSift(frames, verbose)
         end
 
         transform = transformRANSAC(featurePairs1, featurePairs2);
-        transformedFrame = imwarp(frame,transform);
+        transformedFrame = imwarp(frame,transform,'OutputView',imref2d(size(frame1)));
         figure
-        imshow(frame1);
-        figure
-        imshow(frame);
-        figure
-        imshow(transformedFrame);
-        
+        imshowpair(frame1,transformedFrame,'blend');
     end
     
 end
 
 function tform = transformRANSAC(featurePairs1, featurePairs2)
 
-    numRANSAC = 20;
+    numRANSAC = 40;
 
     bestFitness = 0;
     bestH = 0;
@@ -81,6 +76,6 @@ function tform = transformRANSAC(featurePairs1, featurePairs2)
 end
 
 function tform = fitHomography(matchedPoints1,matchedPoints2)
-    tform = fitgeotrans(matchedPoints1,matchedPoints2,'affine');
+    tform = fitgeotrans(matchedPoints2,matchedPoints1,'projective');
 %     tform = estimateGeometricTransform(matchedPoints1,matchedPoints2,'projective');
 end
