@@ -39,7 +39,7 @@ function P = peakfit2d(Z)
 sZ = size(Z);
 if min(sZ)<2
     disp('Wrong matrix size. Input matrix should be numerical MxN type.');
-    P = [0 0];
+    P = [];
     return;
 end
 
@@ -51,7 +51,7 @@ end
 [yp,xp]=ind2sub(sZ,p); 
 if (yp==1)||(yp==sZ(1))||(xp==1)||(xp==sZ(2))
     disp('Maximum position at matrix border. No subsample approximation possible.');
-    P = [yp xp];
+    P = [];
     return;
 end
 K = Z(yp-1:yp+1,xp-1:xp+1);

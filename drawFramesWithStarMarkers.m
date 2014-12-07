@@ -24,10 +24,12 @@ function drawFramesWithStarMarkers(frames, starCentersAndRadii, numToDraw, oneFi
         figure
         imshow(frames(:,:,:,i));
         hold on; % Prevent image from being blown away.
+%         plot(starCentersAndRadii(1:1+numToDraw,1),starCentersAndRadii(1:1+numToDraw,2),'r+');
         viscircles(starCentersAndRadii(1:1+numToDraw,1:2,i), starCentersAndRadii(1:1+numToDraw,3,i),'EdgeColor','r');
         if (oneFigure)
             for j=2:numFrames
                 currentIndex = totalNumCenters*(j-1)+1;
+%                 plot(starCentersAndRadii(currentIndex:currentIndex+numToDraw,1),starCentersAndRadii(currentIndex:currentIndex+numToDraw,2),'r+');
                 viscircles(starCentersAndRadii(currentIndex:currentIndex+numToDraw,1:2), starCentersAndRadii(currentIndex:currentIndex+numToDraw,3),'EdgeColor','r');
             end
         end

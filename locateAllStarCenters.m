@@ -1,10 +1,10 @@
-function allStarCentersAndRadii = locateAllStarCenters(frames, highRes)
+function allStarCentersAndRadii = locateAllStarCenters(framesGray, highRes)
     
-    allStarCentersAndRadii = zeros(1, 3, size(frames, 4));%starx, stary, starRad
+    allStarCentersAndRadii = zeros(1, 3, size(framesGray, 4));%starx, stary, starRad
     fprintf('Locating star centers and radii   \n');
     
-    for i=1:size(frames, 4)
-        frame = frames(:,:,1,i);%working with a 2D (gray) image
+    for i=1:size(framesGray, 4)
+        frame = framesGray(:,:,1,i);%working with a 2D (gray) image
         
         %get locations of stars - tried several techniques
         
@@ -19,16 +19,19 @@ function allStarCentersAndRadii = locateAllStarCenters(frames, highRes)
 %         maxIndices = convertIndicesToXY(maxIndices, size(frame,2));
 
         %circular Hough transform
-%         [maxIndices,radii,metric] = imfindcircles(frame,[1, 10]);
-
-        %fast peak find (~1 px accuracy)
-        %http://www.mathworks.com/matlabcentral/fileexchange/37388-fast-2d-peak-finder
-        %FastPeakFind(d, thres, filt ,edg, res, fid)
+%         [maxIndices,radii,metric] = imfindcircles(frame,[1, 10])   
+        
         if ~highRes
+            
+            %fast peak find (~1 px accuracy)
+            %http://www.mathworks.com/matlabcentral/fileexchange/37388-fast-2d-peak-finder
+            %FastPeakFind(d, thres, filt ,edg, res, fid)
             peaks=FastPeakFind(frame);
             clear maxIndices;
             maxIndices(:,1) = peaks(1:2:end);
             maxIndices(:,2) = peaks(2:2:end);
+            
+            rads = roughCalcRad(frame, maxIndices);
         else
             %first find all brightestSpots
             [row, col, ~] = find(frame>0.8);
@@ -76,18 +79,37 @@ function allStarCentersAndRadii = locateAllStarCenters(frames, highRes)
                 index = index+1;
             end
             maxIndices = peaks;
+            rads = roughCalcRad(frame, maxIndices);
 
-            %peak fit (sub-pixel accuracy
+            %gaussian peak fit (sub-pixel accuracy
             %http://www.mathworks.com/matlabcentral/fileexchange/26504-sub-sample-peak-fitting-2d
-%             peaks = peakfit2d(frame);
+            subSampleIndices = zeros(1,3);
+            index = 1;
+            for j=1:size(maxIndices,1)
+                rad = rads(j)*4;
+                originX = round(maxIndices(j,1)-rad/2);
+                originY = round(maxIndices(j,2)-rad/2);
+                if originX<1 || originY<1 || originX+rad>size(frame,2) || originY+rad>size(frame,1)
+                    continue;
+                end
+                window = frame(originY:originY+rad, originX:originX+rad,:);
+                peak = peakfit2d(window);%[y, x]
+                if size(peak,1) == 0
+                    continue
+                end
+                subSampleIndices(index,1) = originX + peak(2) - 1;
+                subSampleIndices(index,2) = originY + peak(1) - 1;
+                subSampleIndices(index,3) = rads(j);
+                index = index +1;
+            end
+            maxIndices = subSampleIndices(:,1:2);
+            rads = subSampleIndices(:,3);
         end
         
         clear starCentersAndRadii;
-        starCentersAndRadii = allStarCentersAndRadii(:,:,i);
+        starCentersAndRadii = allStarCentersAndRadii(:,:,i); 
         starCentersAndRadii(1:size(maxIndices, 1), 1:2) = maxIndices;
-        rads = roughCalcRad(frame, maxIndices);
         starCentersAndRadii(1:size(maxIndices, 1),3) = rads;
-        
         starCentersAndRadii = sortByRadius(starCentersAndRadii);
         allStarCentersAndRadii(1:size(starCentersAndRadii,1),:,i) = starCentersAndRadii;
     end

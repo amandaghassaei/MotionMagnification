@@ -2,6 +2,7 @@ addpath('./data');
 addpath('./matlabPyrTools');
 addpath('./matlabPyrTools/MEX');
 addpath('./FastPeakFind');
+addpath('./peakfit2d');
 addpath('./sift');
 
 dataDir = './data';
@@ -41,14 +42,18 @@ for i=1:size(allFilesToProcess, 1)
 %         matchStarFeatures(frame1, frame, starCentersAndRadii);
 
         %second pass - align big stars well
-        windowSize = size(frame, 2)/20;
+        windowSize = size(frame, 2)/8;
         proximityMatchStars(false, frame1, frame, transformedFrame, starCenters(:,:,1), starCenters(:,:,j), transform, windowSize);
         
         %final pass - align using only smaller background stars (they are
         %at infinity and do not move frame to frame)
         windowSize = size(frame, 2)/100;
-        proximityMatchStars(true, frame1, frame, transformedFrame, starCenters(:,:,1), starCenters(:,:,j), transform, windowSize);
+        [transform, transformedFrame] = proximityMatchStars(true, frame1, frame, transformedFrame, starCenters(:,:,1), starCenters(:,:,j), transform, windowSize);
     
+%         figure
+%         imshow(transformedFrame)
+%         figure
+%         imshow(frame1);
     end
 %     writeVideoFromFrames(fullfile(resultsDir, filename), frameRate, frames, verbose);
 end

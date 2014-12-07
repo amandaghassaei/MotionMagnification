@@ -1,4 +1,4 @@
-function transform = proximityMatchStars(finalPass, frame1, frame, transformedFrame, starCenters1,...
+function [transform, transformedFrame] = proximityMatchStars(finalPass, frame1, frame, transformedFrame, starCenters1,...
     starCenters, forwardTransform, windowSize)
 
     if finalPass
@@ -18,7 +18,7 @@ function transform = proximityMatchStars(finalPass, frame1, frame, transformedFr
     
     featurePairs1 = starCenters1(matches(:,1), 1:2);
     featurePairs2 = starCenters(matches(:,2), 1:2);
-    drawFeatureMaps([frame1; transformedFrame], featurePairs1, transformedStarCenters(matches(:,2), 1:2));
+%     drawFeatureMaps([frame1; transformedFrame], featurePairs1, transformedStarCenters(matches(:,2), 1:2));
     
     numMatches = 10;
     numRANSAC = 20;
@@ -27,7 +27,7 @@ function transform = proximityMatchStars(finalPass, frame1, frame, transformedFr
         numRANSAC = 200;
     end
     transform = transformRANSAC(featurePairs1, featurePairs2, numRANSAC, numMatches);
-    testImageRegistration(frame1, frame, transform, true);
+    transformedFrame = testImageRegistration(frame1, frame, transform, true);
 end
 
 function [starCenters1, starCenters] = getCentersForFinalPass(starCenters1, starCenters)
@@ -71,26 +71,13 @@ end
 
 function filtered = removeTiniestStars(centers)
 %     remove stars with small rad
-    largest = centers(1,3);
-    filtered = zeros(1,3);
-    for i=1:size(centers,1)
-        if (centers(i,3)>0.15*largest)
-            filtered(i,:) = centers(i,:);
-        else
-            return;
-        end
-    end
+    totalFeatures = min(200, size(centers, 1));
+    filtered = centers(1:totalFeatures, :);
 end
 
 function filtered = removeLargerStars(centers)
 %     remove stars with large rad
-    largest = centers(1,3);
-    filtered = zeros(1,3);
-    index = 1;
-    for i=1:size(centers,1)
-        if (centers(i,3)<0.5*largest)
-            filtered(index,:) = centers(i,:);
-            index = index+1;
-        end
-    end
+    numCenters = size(centers, 1);
+    totalFeatures = min(200, numCenters);
+    filtered = centers(numCenters-totalFeatures+1:end, :);
 end
