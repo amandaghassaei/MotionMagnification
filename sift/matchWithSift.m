@@ -29,6 +29,7 @@ function matchWithSift(frames, verbose)
         transform = transformRANSAC(featurePairs1, featurePairs2);
         transformedFrame = imwarp(frame,transform,'OutputView',imref2d(size(frame1)));
         figure
+        title('sift match');
         imshowpair(frame1,transformedFrame,'blend');
     end
     
@@ -36,18 +37,18 @@ end
 
 function tform = transformRANSAC(featurePairs1, featurePairs2)
 
-    numRANSAC = 40;
+    numRANSAC = 200;
 
     bestFitness = 0;
     bestH = 0;
     for i=1:numRANSAC
         %calculate homography for a set of matches
-        m = 5;%number of matched pairs to compute homography
+        m =6;%number of matched pairs to compute homography
 
         % pick m matches randomly
         x1Hom = zeros(m,2);
         x2Hom = zeros(m,2);
-        for k=1:4
+        for k=1:m
             index = randi(size(featurePairs1,1));
             x1Hom(k,:) = featurePairs1(index,:);
             x2Hom(k,:) = featurePairs2(index,:);
@@ -61,8 +62,8 @@ function tform = transformRANSAC(featurePairs1, featurePairs2)
         for j=1:size(featurePairs1,1)
             match1 = featurePairs1(j,:);
             match2 = featurePairs2(j,:);
-            homogMatch1 = transformPointsForward(testH, match1);
-            diffSq = (homogMatch1(1,1)-match2(1,1))^2+(homogMatch1(1,2)-match2(1,2))^2;
+            homogMatch1 = transformPointsForward(testH, match2);
+            diffSq = (homogMatch1(1,1)-match1(1,1))^2+(homogMatch1(1,2)-match1(1,2))^2;
             sumDiff = sumDiff + diffSq;
         end
         
@@ -77,5 +78,4 @@ end
 
 function tform = fitHomography(matchedPoints1,matchedPoints2)
     tform = fitgeotrans(matchedPoints2,matchedPoints1,'projective');
-%     tform = estimateGeometricTransform(matchedPoints1,matchedPoints2,'projective');
 end
