@@ -7,11 +7,11 @@ function rads = roughCalcRad(image, maxIndices)
     rads = zeros(size(maxIndices, 1),1);
     for i=1:size(maxIndices, 1)
         rad = 0;
-        xPosition = maxIndices(i,1);
-        yPosition = maxIndices(i,2);
+        xPosition = round(maxIndices(i,1));
+        yPosition = round(maxIndices(i,2));
         
         %check that we are in image bounds
-        if xPosition<1 || xPosition>size(image, 2)
+        if xPosition<1 || xPosition>(size(image, 2)-1)
             rads(i) = -1;
             continue;
         end
@@ -23,7 +23,7 @@ function rads = roughCalcRad(image, maxIndices)
         while(image(yPosition, xPosition) > brightnessThreshold || (image(yPosition, xPosition)-image(yPosition, xPosition+1))>0.15)
             rad = rad+1;
             xPosition = xPosition+1;
-            if xPosition>size(image, 2)
+            if xPosition>size(image, 2)-1
                 break;
             end
         end

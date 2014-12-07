@@ -46,7 +46,7 @@ end
 function allFrames = extractImgsFromSequence(filename, verbose)
 
     fprintf('Loading images from %s directory   \n', filename);
-    allFiles = getAllFilesInDir(filename);
+    allFiles = removeGarbage(getAllFilesInDir(filename));
     
 %      load first image
     file1 = allFiles(1);
@@ -63,6 +63,19 @@ function allFrames = extractImgsFromSequence(filename, verbose)
         end
         img = im2double(imread(file));
         allFrames(1:size(img, 1), 1:size(img, 2), :, i) = img(:, :, :);%resizes matrix even if new frame is bigger
+    end
+end
+
+function noGarbage = removeGarbage(allFiles)
+    noGarbage = allFiles;
+    index = 1;
+    for i=1:size(allFiles,1)
+        file = allFiles(i);
+        if size(strfind(file{1}, 'DS_Store'),1) > 0
+            noGarbage(i) = [];
+            continue;
+        end
+        index = index+1;
     end
 end
 

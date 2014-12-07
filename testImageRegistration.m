@@ -1,5 +1,7 @@
-function testImageRegistration(frame1, frame, transform)
+function transformedFrame = testImageRegistration(frame1, frame, transform, show)
     transformedFrame = imwarp(frame,transform,'OutputView',imref2d(size(frame1)));
-    figure
-    imshowpair(frame1,transformedFrame,'blend');
+    if (show)
+        figure
+        imshowpair(frame1,transformedFrame,'blend');
+    end
 end

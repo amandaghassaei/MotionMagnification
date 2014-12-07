@@ -7,9 +7,7 @@ function [transform, transformedFrame] = featureMatchByHand(frame1, frame)
 
 %         [matchedPoints1,matchedPoints2] = selectFeaturePoints(frame1, frame);
     transform = fitgeotrans(matchedPoints2,matchedPoints1,'projective');
-    transformedFrame = imwarp(frame,transform,'OutputView',imref2d(size(frame1)));
-%     figure
-%     imshowpair(frame1,transformedFrame,'blend');    
+    transformedFrame = testImageRegistration(frame1, frame, transform, false);   
 end
 
 function [matchedPoints1,matchedPoints2] = selectFeaturePoints(frame1, frame)

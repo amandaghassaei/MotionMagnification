@@ -1,4 +1,4 @@
-function allStarCentersAndRadii = locateAllStarCenters(frames)
+function allStarCentersAndRadii = locateAllStarCenters(frames, highRes)
     
     allStarCentersAndRadii = zeros(1, 3, size(frames, 4));%starx, stary, starRad
     fprintf('Locating star centers and radii   \n');
@@ -23,14 +23,64 @@ function allStarCentersAndRadii = locateAllStarCenters(frames)
 
         %fast peak find (~1 px accuracy)
         %http://www.mathworks.com/matlabcentral/fileexchange/37388-fast-2d-peak-finder
-        peaks=FastPeakFind(frame);
-        clear maxIndices;
-        maxIndices(:,1) = peaks(1:2:end);
-        maxIndices(:,2) = peaks(2:2:end);
-        
-        %peak fit (sub-pixel accuracy
-        %http://www.mathworks.com/matlabcentral/fileexchange/26504-sub-sample-peak-fitting-2d
-%         P = peakfit2d(frame);
+        %FastPeakFind(d, thres, filt ,edg, res, fid)
+        if ~highRes
+            peaks=FastPeakFind(frame);
+            clear maxIndices;
+            maxIndices(:,1) = peaks(1:2:end);
+            maxIndices(:,2) = peaks(2:2:end);
+        else
+            %first find all brightestSpots
+            [row, col, ~] = find(frame>0.8);
+            maxIndices = col;
+            maxIndices(:,2) = row;
+            
+            %cluster together neighbors
+            clusters = [row, col, reshape(linspace(1,size(row,1),size(row,1)),size(row, 1),1)];%assign a cluster val to each bright px
+            for m=1:size(row)
+                for n=m:size(row)
+                    if clusters(m,3) == clusters(n,3)
+                        continue;
+                    end
+                    if abs(clusters(m,1)-clusters(n,1))<=1 && abs(clusters(m,2)-clusters(n,2))<=1
+                        cluster1Num = clusters(m,3);
+                        cluster2Num = clusters(n,3);
+                        newCluster = min(cluster1Num, cluster2Num);
+                        if newCluster == cluster1Num
+                            clusters = updateAllClusterMembers(clusters, newCluster, cluster2Num);
+                        else
+                            clusters = updateAllClusterMembers(clusters, newCluster, cluster1Num);
+                        end
+                    end
+                end
+            end
+
+            peaks = zeros(1,2);
+            index = 1;
+            for j=1:max(clusters(:,3))
+                rowSum = 0;
+                colSum = 0;
+                numPxs = 0;
+                for k=1:size(clusters, 1)
+                    if clusters(k,3) == j
+                        rowSum = rowSum + clusters(k,1);
+                        colSum = colSum + clusters(k,2);
+                        numPxs = numPxs+1;
+                    end
+                end
+                if numPxs == 0
+                    continue;
+                end
+                peaks(index,2) = rowSum/numPxs;
+                peaks(index,1) = colSum/numPxs;
+                index = index+1;
+            end
+            maxIndices = peaks;
+
+            %peak fit (sub-pixel accuracy
+            %http://www.mathworks.com/matlabcentral/fileexchange/26504-sub-sample-peak-fitting-2d
+%             peaks = peakfit2d(frame);
+        end
         
         clear starCentersAndRadii;
         starCentersAndRadii = allStarCentersAndRadii(:,:,i);
@@ -42,6 +92,14 @@ function allStarCentersAndRadii = locateAllStarCenters(frames)
         allStarCentersAndRadii(1:size(starCentersAndRadii,1),:,i) = starCentersAndRadii;
     end
 
+end
+
+function clusters = updateAllClusterMembers(clusters, newCluster, oldClusterNum)
+    for i=1:size(clusters, 1)
+        if clusters(i,3) == oldClusterNum
+            clusters(i,3) = newCluster;
+        end
+    end
 end
 
 function indices = convertIndicesToXY(indices, width)

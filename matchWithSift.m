@@ -23,5 +23,5 @@ function [transform, transformedFrame] = matchWithSift(frame1, frame1Gray, frame
     end
 
     transform = transformRANSAC(featurePairs1, featurePairs2, 200, 6);
-%     testImageRegistration(frame1, frame, transform);
+    transformedFrame = testImageRegistration(frame1, frame, transform, true);
 end
