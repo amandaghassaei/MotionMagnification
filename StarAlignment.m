@@ -2,6 +2,7 @@ addpath('./data');
 addpath('./matlabPyrTools');
 addpath('./matlabPyrTools/MEX');
 addpath('./FastPeakFind');
+addpath('./sift');
 
 dataDir = './data';
 resultsDir = 'results';
@@ -23,7 +24,8 @@ for i=1:size(allFilesToProcess, 1)
     [frames, frameRate] = loadImgs(dataDir, filename, verbose);
     frames = preProcessFrames(frames, filename, 'gray', verbose);
     starCentersAndRadii = locateAllStarCenters(frames);
-    matchStarFeatures(frames, starCentersAndRadii);
+    matchWithSift(frames, verbose);
+%     matchStarFeatures(frames, starCentersAndRadii);
 %     drawFramesWithStarMarkers(frames, starCentersAndRadii);   
     
 %     writeVideoFromFrames(fullfile(resultsDir, filename), frameRate, frames, verbose);
