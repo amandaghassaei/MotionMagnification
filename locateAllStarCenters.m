@@ -32,16 +32,18 @@ function allStarCentersAndRadii = locateAllStarCenters(framesGray, highRes)
             maxIndices(:,2) = peaks(2:2:end);
             
             rads = roughCalcRad(frame, maxIndices);
+            progmeter(i,size(framesGray, 4));
         else
             %first find all brightestSpots
-            [row, col, ~] = find(frame>0.8);
+            [row, col, ~] = find(frame>0.9);
             maxIndices = col;
             maxIndices(:,2) = row;
             
             %cluster together neighbors
             clusters = [row, col, reshape(linspace(1,size(row,1),size(row,1)),size(row, 1),1)];%assign a cluster val to each bright px
-            for m=1:size(row)
-                for n=m:size(row)
+            for m=1:size(row,1)
+                progmeter(i*m,size(framesGray, 4)*size(row,1));
+                for n=m:size(row,1)
                     if clusters(m,3) == clusters(n,3)
                         continue;
                     end

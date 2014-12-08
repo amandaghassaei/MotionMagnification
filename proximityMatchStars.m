@@ -14,11 +14,11 @@ function [transform, transformedFrame] = proximityMatchStars(finalPass, frame1, 
 %     centersDim = min(size(starCenters1,1), size(transformedStarCenters,1));
 %     drawFramesWithStarMarkers(cat(4, frame1, transformedFrame), cat(3, starCenters1(1:centersDim,:), transformedStarCenters(1:centersDim,:)), 200, true);
     
-    matches = findMatches(starCenters1, transformedStarCenters, windowSize);
+    [matches, ~] = findMatches(starCenters1, transformedStarCenters, windowSize);
     
     featurePairs1 = starCenters1(matches(:,1), 1:2);
     featurePairs2 = starCenters(matches(:,2), 1:2);
-%     drawFeatureMaps([frame1; transformedFrame], featurePairs1, transformedStarCenters(matches(:,2), 1:2));
+    drawFeatureMaps([frame1; transformedFrame], featurePairs1, transformedStarCenters(matches(:,2), 1:2));
     
     numMatches = 10;
     numRANSAC = 20;
@@ -27,7 +27,7 @@ function [transform, transformedFrame] = proximityMatchStars(finalPass, frame1, 
         numRANSAC = 200;
     end
     transform = transformRANSAC(featurePairs1, featurePairs2, numRANSAC, numMatches);
-    transformedFrame = testImageRegistration(frame1, frame, transform, true);
+    transformedFrame = testImageRegistration(frame1, frame, transform, false);
 end
 
 function [starCenters1, starCenters] = getCentersForFinalPass(starCenters1, starCenters)
@@ -42,42 +42,24 @@ function [starCenters1, starCenters] = getCentersForFirstPass(starCenters1, star
     starCenters = removeTiniestStars(starCenters);
 end
 
-function matches = findMatches(starCenters1, transformedStarCenters, windowSize)
-
-    matches = zeros(1,2);
-    matchIndex = 1;
-    for i=1:size(transformedStarCenters, 1)
-        if transformedStarCenters(i,3)==-1 %this was outside the bounds of the transformed image
-            continue;
-        end
-        bestMatch = [-1,-1,-1];
-        for j=1:size(starCenters1, 1)
-            dist = (starCenters1(j,1)-transformedStarCenters(i,1))^2 + (starCenters1(j,2)-transformedStarCenters(i,2))^2;
-            if dist<(windowSize/2)^2
-                if bestMatch(1,1) == -1 || dist<bestMatch(1,3)
-                    bestMatch = [j,i,dist];
-                end
-            end
-        end
-        
-        if bestMatch(1,1) ~= -1
-            matches(matchIndex,1) = bestMatch(1,1);
-            matches(matchIndex,2) = bestMatch(1,2);
-            matchIndex = matchIndex+1;
-        end
-    end
-
-end
-
 function filtered = removeTiniestStars(centers)
 %     remove stars with small rad
-    totalFeatures = min(200, size(centers, 1));
+    centers( ~any(centers,2), : ) = [];
+    numCenters = size(centers, 1);
+    totalFeatures = max(round(numCenters/2), 200);
+    if totalFeatures>numCenters
+        totalFeatures = numCenters;
+    end
     filtered = centers(1:totalFeatures, :);
 end
 
 function filtered = removeLargerStars(centers)
 %     remove stars with large rad
+    centers( ~any(centers,2), : ) = [];
     numCenters = size(centers, 1);
-    totalFeatures = min(200, numCenters);
+    totalFeatures = max(round(numCenters*2/3), 200);
+    if totalFeatures>numCenters
+        totalFeatures = numCenters;
+    end
     filtered = centers(numCenters-totalFeatures+1:end, :);
 end

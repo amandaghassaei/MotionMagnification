@@ -71,8 +71,8 @@ function noGarbage = removeGarbage(allFiles)
     index = 1;
     for i=1:size(allFiles,1)
         file = allFiles(i);
-        if size(strfind(file{1}, 'DS_Store'),1) > 0
-            noGarbage(i) = [];
+        if size(strfind(file{1}, 'DS_Store'),1) > 0 || size(strfind(file{1}, '.mat'),1) > 0
+            noGarbage(index) = [];
             continue;
         end
         index = index+1;
